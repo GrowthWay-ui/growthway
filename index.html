@@ -524,22 +524,14 @@ textarea.field{min-height:120px;resize:vertical}
 <script>
   // Replace these placeholders with the Web App configuration from your Firebase project.
   // Firebase Web API keys are client identifiers; NEVER put service-account/private secrets here.
-  window.GROWTHWAY_FIREBASE_CONFIG = {
-    apiKey: "YOUR_FIREBASE_WEB_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    appId: "YOUR_FIREBASE_APP_ID"
-  };
-  window.growthwayFirebaseReady = false;
-  try {
-    const cfg = window.GROWTHWAY_FIREBASE_CONFIG;
-    if (window.firebase && cfg.apiKey && !String(cfg.apiKey).startsWith("YOUR_")) {
-      if (!firebase.apps.length) firebase.initializeApp(cfg);
-      window.growthwayFirebaseReady = true;
-    }
-  } catch (err) {
-    console.warn("GrowthWay Firebase Auth initialization failed.", err);
-  }
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, getDocs, collection, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js';
+import { firebaseConfig } from './firebase-config.js';
+
+const firebaseApp = initializeApp(firebaseConfig);
+const gwAuth = getAuth(firebaseApp);
+const gwDb = getFirestore(firebaseApp);
 </script>
 
 </head>
