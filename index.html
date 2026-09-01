@@ -1446,6 +1446,56 @@ function openForgotPassword(){
   window.open("https://wa.link/nkwzo1","_blank","noopener,noreferrer");
 }
 async function loginWithEmailPassword(){
+  const email = $("loginEmail")?.value.trim();
+  const password = $("loginPassword")?.value || "";
+  const btn = $("loginSubmitBtn");
+
+  if(!email || !password){
+    setLoginStatus("Please enter your email and password.", true);
+    return;
+  }
+
+  try{
+    if(btn){
+      btn.disabled = true;
+      btn.innerHTML = 'Logging in... <i data-lucide="loader-circle"></i>';
+      if(window.lucide) lucide.createIcons();
+    }
+
+    const credential = await signInWithEmailAndPassword(gwAuth, email, password);
+
+    window.growthwayAuthUser = credential.user;
+
+    setLoginStatus("Login successful. Checking your GrowthWay course access...");
+
+    setTimeout(()=>{
+      closeModal("loginModal");
+      showToast("Welcome back, " + (credential.user.displayName || credential.user.email) + ".");
+      renderDashboard?.();
+    },700);
+
+  }catch(err){
+    const code = err?.code || "";
+
+    const msg =
+      code.includes("invalid-credential") ||
+      code.includes("wrong-password") ||
+      code.includes("user-not-found")
+      ? "Email or password is incorrect."
+      : code.includes("too-many-requests")
+      ? "Too many attempts. Please try again later."
+      : "Login failed. Please check your details and try again.";
+
+    setLoginStatus(msg,true);
+
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.innerHTML = 'Login &amp; Continue <i data-lucide="log-in"></i>';
+      if(window.lucide) lucide.createIcons();
+    }
+  }
+}
   const email=$("loginEmail")?.value.trim();
   const password=$("loginPassword")?.value||"";
   const btn=$("loginSubmitBtn");
@@ -1469,19 +1519,36 @@ async function loginWithEmailPassword(){
   }
 }
 async function loginWithGoogle(){
-  if(!window.growthwayFirebaseReady||!window.firebase?.auth){
-    setLoginStatus("Firebase Authentication is not connected yet. Add your Firebase Web App configuration to enable Google Login.",true);
-    return;
-  }
   try{
-    const provider=new firebase.auth.GoogleAuthProvider();
-    const credential=await firebase.auth().signInWithPopup(provider);
-    window.growthwayAuthUser=credential.user;
+    const provider = new GoogleAuthProvider();
+
+    const credential = await signInWithPopup(gwAuth, provider);
+
+    window.growthwayAuthUser = credential.user;
+
     closeModal("loginModal");
-    showToast("Welcome back, "+(credential.user.displayName||credential.user.email)+".");
+
+    showToast(
+      "Welcome back, " +
+      (credential.user.displayName || credential.user.email) +
+      "."
+    );
+
     renderDashboard?.();
+
   }catch(err){
-    setLoginStatus("Google Login could not be completed. Please try again.",true);
+    console.error("Google Login Error:", err);
+
+    if(err?.code === "auth/popup-closed-by-user"){
+      setLoginStatus("Google Login was cancelled.", true);
+    }else if(err?.code === "auth/popup-blocked"){
+      setLoginStatus("Please allow pop-ups and try again.", true);
+    }else{
+      setLoginStatus(
+        "Google Login could not be completed. Please try again.",
+        true
+      );
+    }
   }
 }
 function demoLogin(){loginWithGoogle()}
