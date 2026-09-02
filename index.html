@@ -518,20 +518,59 @@ textarea.field{min-height:120px;resize:vertical}
 .login-status.error{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
 @media(max-width:520px){.login-box{padding:22px}.login-heading h3{font-size:23px}}
 </style>
-<!-- GrowthWay Firebase Authentication SDK (Email/Password login) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script>
-  // Replace these placeholders with the Web App configuration from your Firebase project.
-  // Firebase Web API keys are client identifiers; NEVER put service-account/private secrets here.
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, getDocs, collection, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js';
-import { firebaseConfig } from './firebase-config.js';
+<!-- GrowthWay Firebase Authentication -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
-const firebaseApp = initializeApp(firebaseConfig);
-const gwAuth = getAuth(firebaseApp);
-const gwDb = getFirestore(firebaseApp);
+  import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
+    onAuthStateChanged,
+    signOut,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    getDocs,
+    collection,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const firebaseApp = initializeApp(firebaseConfig);
+
+  const auth = getAuth(firebaseApp);
+  const db = getFirestore(firebaseApp);
+
+  // Make Firebase available to the main GrowthWay script
+  window.gwAuth = auth;
+  window.gwDb = db;
+
+  window.gwGoogleAuthProvider = GoogleAuthProvider;
+  window.gwSignInWithPopup = signInWithPopup;
+  window.gwSignInWithRedirect = signInWithRedirect;
+  window.gwGetRedirectResult = getRedirectResult;
+  window.gwOnAuthStateChanged = onAuthStateChanged;
+  window.gwSignOut = signOut;
+
+  window.gwCreateUserWithEmailAndPassword =
+    createUserWithEmailAndPassword;
+
+  window.gwSignInWithEmailAndPassword =
+    signInWithEmailAndPassword;
+
+  window.growthwayFirebaseReady = true;
+
+  console.log("GrowthWay Firebase connected successfully.");
 </script>
 
 </head>
@@ -1455,6 +1494,18 @@ async function loginWithEmailPassword(){
     return;
   }
 
+  if(
+    !window.growthwayFirebaseReady ||
+    !window.gwAuth ||
+    !window.gwSignInWithEmailAndPassword
+  ){
+    setLoginStatus(
+      "Firebase Authentication is not connected yet. Please try again.",
+      true
+    );
+    return;
+  }
+
   try{
     if(btn){
       btn.disabled = true;
@@ -1462,15 +1513,26 @@ async function loginWithEmailPassword(){
       if(window.lucide) lucide.createIcons();
     }
 
-    const credential = await signInWithEmailAndPassword(gwAuth, email, password);
+    const credential =
+      await window.gwSignInWithEmailAndPassword(
+        window.gwAuth,
+        email,
+        password
+      );
 
     window.growthwayAuthUser = credential.user;
 
-    setLoginStatus("Login successful. Checking your GrowthWay course access...");
+    setLoginStatus(
+      "Login successful. Checking your GrowthWay course access..."
+    );
 
     setTimeout(()=>{
       closeModal("loginModal");
-      showToast("Welcome back, " + (credential.user.displayName || credential.user.email) + ".");
+      showToast(
+        "Welcome back, " +
+        (credential.user.displayName || credential.user.email) +
+        "."
+      );
       renderDashboard?.();
     },700);
 
@@ -1491,33 +1553,13 @@ async function loginWithEmailPassword(){
   }finally{
     if(btn){
       btn.disabled = false;
-      btn.innerHTML = 'Login &amp; Continue <i data-lucide="log-in"></i>';
+      btn.innerHTML =
+        'Login &amp; Continue <i data-lucide="log-in"></i>';
       if(window.lucide) lucide.createIcons();
     }
   }
 }
-  const email=$("loginEmail")?.value.trim();
-  const password=$("loginPassword")?.value||"";
-  const btn=$("loginSubmitBtn");
-  if(!email||!password){setLoginStatus("Please enter your email and password.",true);return}
-  if(!window.growthwayFirebaseReady||!window.firebase?.auth){
-    setLoginStatus("Firebase Authentication is not connected yet. Add your Firebase Web App configuration to enable real login.",true);
-    return;
-  }
-  try{
-    if(btn){btn.disabled=true;btn.innerHTML='Logging in... <i data-lucide="loader-circle"></i>';if(window.lucide)lucide.createIcons()}
-    const credential=await firebase.auth().signInWithEmailAndPassword(email,password);
-    window.growthwayAuthUser=credential.user;
-    setLoginStatus("Login successful. Checking your GrowthWay course access...");
-    setTimeout(()=>{closeModal("loginModal");showToast("Welcome back, "+(credential.user.displayName||credential.user.email)+".");renderDashboard?.();},700);
-  }catch(err){
-    const code=err?.code||"";
-    const msg=code.includes("invalid-credential")||code.includes("wrong-password")||code.includes("user-not-found")?"Email or password is incorrect.":code.includes("too-many-requests")?"Too many attempts. Please try again later.":"Login failed. Please check your details and try again.";
-    setLoginStatus(msg,true);
-  }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='Login &amp; Continue <i data-lucide="log-in"></i>';if(window.lucide)lucide.createIcons()}
-  }
-}
+
 async function loginWithGoogle(){
   try{
     const provider = new GoogleAuthProvider();
