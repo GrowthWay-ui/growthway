@@ -1929,8 +1929,37 @@ function setupCounters(){
   counters.forEach(c=>obs.observe(c))
 }
 function scrollToTop(){window.scrollTo({top:0,behavior:"smooth"})}
-function setupBackToTop(){const b=$("backToTop");if(!b)return;window.addEventListener("scroll",()=>b.classList.toggle("show",scrollY>500),{passive:true})}
+window.addEventListener("load", async ()=>{
+  if(
+    window.growthwayFirebaseReady &&
+    window.gwAuth &&
+    window.gwGetRedirectResult
+  ){
+    try{
+      const result = await window.gwGetRedirectResult(
+        window.gwAuth
+      );
 
+      if(result?.user){
+        window.growthwayAuthUser = result.user;
+
+        closeModal("loginModal");
+
+        showToast(
+          "Welcome back, " +
+          (result.user.displayName || result.user.email) +
+          "."
+        );
+
+        renderDashboard?.();
+      }
+    }catch(err){
+      console.error("Google Redirect Login Error:", err);
+    }
+  }
+});
+
+function setupBackToTop(){const b=$("backToTop");if(!b)return;window.addEventListener("scroll",()=>b.classList.toggle("show",scrollY>500),{passive:true})}
 function setupHeader(){
   const h=$("header");window.addEventListener("scroll",()=>h.classList.toggle("scrolled",scrollY>20),{passive:true})
 }
