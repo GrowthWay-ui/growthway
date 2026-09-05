@@ -1653,13 +1653,52 @@ function makeAffiliateCode(name){
   return (letters.slice(0,3).padEnd(3,"X"))+"499";
 }
 function applyAffiliate(){
-  const name=$("affiliateName").value.trim(), email=$("affiliateEmail").value.trim();
-  const upiId=$("affiliateUpiId").value.trim(), upiNumber=$("affiliateUpiNumber").value.trim();
-  if(!name||!email||!upiId||upiNumber.length<10){showToast("Please fill all affiliate details.");return}
-  const code=makeAffiliateCode(name);
-  state.affiliateName=name;state.affiliateEmail=email;state.affiliateUpiId=upiId;state.affiliateUpiNumber=upiNumber;state.coupon=code;state.ref=code;
-  saveState();renderDashboard();closeModal("affiliateModal");
-  showToast("Affiliate created. Your code is "+code);
+
+  // Check whether the user is logged in
+  if(!window.growthwayAuthUser){
+    showToast("Please login first to join the Affiliate Program.");
+    openModal("loginModal");
+    return;
+  }
+
+  const name = $("affiliateName").value.trim();
+  const email = $("affiliateEmail").value.trim();
+
+  const upiId = $("affiliateUpiId").value.trim();
+  const upiNumber = $("affiliateUpiNumber").value.trim();
+
+  // Validate details
+  if(!name || !email || !upiId || upiNumber.length < 10){
+    showToast("Please fill all affiliate details.");
+    return;
+  }
+
+  // Create unique affiliate code
+  const code = makeAffiliateCode(name);
+
+  // Save affiliate details temporarily in GrowthWay state
+  state.affiliateName = name;
+  state.affiliateEmail = email;
+
+  state.affiliateUpiId = upiId;
+  state.affiliateUpiNumber = upiNumber;
+
+  state.coupon = code;
+  state.ref = code;
+
+  // Save in browser for now
+  saveState();
+
+  // Update dashboard
+  renderDashboard();
+
+  // Close affiliate form
+  closeModal("affiliateModal");
+
+  showToast(
+    "Affiliate created successfully! Your code is " + code
+  );
+
   scrollToId("dashboard");
 }
 
