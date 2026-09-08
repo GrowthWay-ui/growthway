@@ -2153,6 +2153,90 @@ window.addEventListener("load",()=>{
   setInterval(syncTelegramCommunity,1200);
 })();
 </script>
+<script type="module">
 
+import { initializeApp, getApps, getApp }
+from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  getRedirectResult
+}
+from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp
+}
+from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+import { firebaseConfig }
+from "./firebase-config.js";
+
+
+try {
+
+  // Initialize Firebase
+  const app = getApps().length
+    ? getApp()
+    : initializeApp(firebaseConfig);
+
+  // Authentication
+  const auth = getAuth(app);
+
+  // Firestore Database
+  const db = getFirestore(app);
+
+
+  // Make Firebase available to your existing website code
+  window.gwAuth = auth;
+  window.gwDb = db;
+
+  // Auth functions
+  window.gwSignInWithEmailAndPassword =
+    signInWithEmailAndPassword;
+
+  window.gwGoogleAuthProvider =
+    GoogleAuthProvider;
+
+  window.gwSignInWithPopup =
+    signInWithPopup;
+
+  window.gwGetRedirectResult =
+    getRedirectResult;
+
+
+  // Firestore functions
+  window.gwDoc = doc;
+  window.gwSetDoc = setDoc;
+  window.gwGetDoc = getDoc;
+  window.gwServerTimestamp = serverTimestamp;
+
+
+  // Firebase Ready
+  window.growthwayFirebaseReady = true;
+
+  console.log(
+    "GrowthWay Firebase + Firestore Connected Successfully"
+  );
+
+}catch(error){
+
+  console.error(
+    "GrowthWay Firebase Initialization Error:",
+    error
+  );
+
+  window.growthwayFirebaseReady = false;
+
+}
+
+</script>
 </body>
 </html>
