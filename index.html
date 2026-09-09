@@ -1652,18 +1652,31 @@ function makeAffiliateCode(name){
   const letters=(name||"USER").replace(/[^a-zA-Z]/g,"").toUpperCase();
   return (letters.slice(0,3).padEnd(3,"X"))+"499";
 }
-function applyAffiliate(){
+async function applyAffiliate(){
 
-  // Check whether the user is logged in
-  if(!window.growthwayAuthUser){
+  // Check Firebase Database connection
+  if(
+    !window.growthwayFirebaseReady ||
+    !window.gwDb ||
+    !window.gwDoc ||
+    !window.gwSetDoc
+  ){
+    showToast("Firebase Database is not connected yet.");
+    return;
+  }
+
+  // Check whether user is logged in
+  const user = window.growthwayAuthUser;
+
+  if(!user){
     showToast("Please login first to join the Affiliate Program.");
     openModal("loginModal");
     return;
   }
 
+  // Get affiliate form details
   const name = $("affiliateName").value.trim();
   const email = $("affiliateEmail").value.trim();
-
   const upiId = $("affiliateUpiId").value.trim();
   const upiNumber = $("affiliateUpiNumber").value.trim();
 
@@ -1673,33 +1686,83 @@ function applyAffiliate(){
     return;
   }
 
-  // Create unique affiliate code
-  const code = makeAffiliateCode(name);
+  try{
 
-  // Save affiliate details temporarily in GrowthWay state
-  state.affiliateName = name;
-  state.affiliateEmail = email;
+    // Create affiliate code
+    const code = makeAffiliateCode(name);
 
-  state.affiliateUpiId = upiId;
-  state.affiliateUpiNumber = upiNumber;
+    // Create Firestore document
+    const affiliateRef = window.gwDoc(
+      window.gwDb,
+      "affiliates",
+      user.uid
+    );
 
-  state.coupon = code;
-  state.ref = code;
+    // Save Affiliate Profile in Firestore
+    await window.gwSetDoc(
+      affiliateRef,
+      {
+        uid: user.uid,
 
-  // Save in browser for now
-  saveState();
+        name: name,
+        email: email,
 
-  // Update dashboard
-  renderDashboard();
+        affiliateCode: code,
+        coupon: code,
 
-  // Close affiliate form
-  closeModal("affiliateModal");
+        referralLink:
+          window.location.origin +
+          "/?ref=" +
+          encodeURIComponent(code),
 
-  showToast(
-    "Affiliate created successfully! Your code is " + code
-  );
+        upiId: upiId,
+        upiNumber: upiNumber,
 
-  scrollToId("dashboard");
+        commissionPerSale: 200,
+
+        totalSales: 0,
+        totalEarnings: 0,
+        availableBalance: 0,
+
+        status: "active",
+
+        createdAt: window.gwServerTimestamp()
+
+      },
+      { merge: true }
+    );
+
+    // Save locally for website UI
+    state.affiliateName = name;
+    state.affiliateEmail = email;
+    state.affiliateUpiId = upiId;
+    state.affiliateUpiNumber = upiNumber;
+    state.coupon = code;
+    state.ref = code;
+
+    saveState();
+
+    // Update dashboard
+    renderDashboard();
+
+    // Close Affiliate Modal
+    closeModal("affiliateModal");
+
+    showToast(
+      "Affiliate account created successfully! Code: " + code
+    );
+
+    scrollToId("dashboard");
+
+  }catch(error){
+
+    console.error("Affiliate Firestore Error:", error);
+
+    showToast(
+      "Affiliate account could not be saved. Please try again."
+    );
+
+  }
 }
 
 const MONTHLY_REWARDS = [
