@@ -1628,24 +1628,80 @@ function openMainCheckout(){
   openCheckout("GrowthWay Brahmastra Ultimate",state.directPrice);
 }
 function getReferral(){
-  const urlRef=new URLSearchParams(location.search).get("ref");
-  return urlRef || localStorage.getItem("gw_ref") || "";
+
+  // Check referral code from URL
+  const urlParams = new URLSearchParams(window.location.search);
+
+  const urlRef = urlParams.get("ref");
+
+  // If referral exists in URL, save it permanently
+  if(urlRef){
+
+    const cleanRef = urlRef.trim().toUpperCase();
+
+    localStorage.setItem("gw_ref", cleanRef);
+
+    return cleanRef;
+  }
+
+  // Otherwise use previously saved referral
+  return localStorage.getItem("gw_ref") || "";
 }
+
+
 function applyReferral(){
-  const ref=getReferral();
+
+  const ref = getReferral();
+
+  // Affiliate referral detected
   if(ref){
-    localStorage.setItem("gw_ref",ref);
-    $("mainPrice").textContent="₹"+state.affiliatePrice;
-    $("affiliatePrice").textContent="Affiliate detected → ₹"+state.affiliatePrice;
-    $("packagePrice").textContent="₹"+state.affiliatePrice;
-    $("packageAffiliate").textContent="Your affiliate offer";
-    $("refNotice").style.display="block";
-    $("refNoticeCode").textContent=ref;
+
+    localStorage.setItem("gw_ref", ref);
+
+    // Update prices safely
+    if($("mainPrice"))
+      $("mainPrice").textContent = "₹" + state.affiliatePrice;
+
+    if($("affiliatePrice"))
+      $("affiliatePrice").textContent =
+        "Affiliate detected → ₹" + state.affiliatePrice;
+
+    if($("packagePrice"))
+      $("packagePrice").textContent =
+        "₹" + state.affiliatePrice;
+
+    if($("packageAffiliate"))
+      $("packageAffiliate").textContent =
+        "Your affiliate offer";
+
+    // Show referral notice
+    if($("refNotice"))
+      $("refNotice").style.display = "block";
+
+    if($("refNoticeCode"))
+      $("refNoticeCode").textContent = ref;
+
   }else{
-    $("mainPrice").textContent="₹"+state.directPrice;
-    $("affiliatePrice").textContent="Use affiliate link → ₹"+state.affiliatePrice;
-    $("packagePrice").textContent="₹"+state.directPrice;
-    $("packageAffiliate").textContent="Affiliate ₹"+state.affiliatePrice;
+
+    // Normal pricing
+    if($("mainPrice"))
+      $("mainPrice").textContent =
+        "₹" + state.directPrice;
+
+    if($("affiliatePrice"))
+      $("affiliatePrice").textContent =
+        "Use affiliate link → ₹" + state.affiliatePrice;
+
+    if($("packagePrice"))
+      $("packagePrice").textContent =
+        "₹" + state.directPrice;
+
+    if($("packageAffiliate"))
+      $("packageAffiliate").textContent =
+        "Affiliate ₹" + state.affiliatePrice;
+
+    if($("refNotice"))
+      $("refNotice").style.display = "none";
   }
 }
 function makeAffiliateCode(name){
