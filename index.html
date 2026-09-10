@@ -1597,19 +1597,18 @@ function demoLogin(){loginWithGoogle()}
 function sendMessage(e){e.preventDefault();showToast("Message form is ready. Connect your email/API backend for production.");e.target.reset()}
 function startPayment(){
   const name=$("buyerName").value.trim(),email=$("buyerEmail").value.trim(),phone=$("buyerPhone").value.trim();
-  const whatsapp=$("buyerWhatsapp").value.trim(),dob=$("buyerDob").value,gender=$("buyerGender").value;
-  const address=$("buyerAddress").value.trim(),city=$("buyerCity").value.trim(),buyerState=$("buyerState").value.trim();
-  const pincode=$("buyerPincode").value.trim(),country=$("buyerCountry").value.trim();
+  const whatsapp=$("buyerWhatsapp").value.trim(),gender=$("buyerGender").value;
+  const city=$("buyerCity").value.trim(),buyerState=$("buyerState").value.trim();
+  const country=$("buyerCountry").value.trim();
   const buyerReferral=$("buyerReferral").value.trim(),password=$("buyerPassword").value,confirmPassword=$("buyerPasswordConfirm").value;
   const cashbackChoice=document.querySelector('input[name="cashbackChoice"]:checked')?.value||"no";
-  if(!name||!email||!phone||!whatsapp||!dob||!gender||!address||!city||!buyerState||!pincode||!country||!password||!confirmPassword){showToast("Please fill all required details.");return}
+  if(!name||!email||!phone||!whatsapp||!gender||!city||!buyerState||!country||!password||!confirmPassword){showToast("Please fill all required details.");return}
   if(password!==confirmPassword){showToast("Passwords do not match.");return}
   if(!/^\d{10}$/.test(phone)||!/^\d{10}$/.test(whatsapp)){showToast("Enter valid 10-digit phone numbers.");return}
-  if(!/^\d{6}$/.test(pincode)){showToast("Enter a valid 6-digit PIN code.");return}
   const referral=buyerReferral||getReferral();
   if(referral){
     state.sales=Array.isArray(state.sales)?state.sales:[];
-    state.sales.push({product:"Brahmastra Ultimate",amount:Number(state.commission||200),time:new Date().toISOString(),ref:referral,buyerName:name,buyerEmail:email,buyerPhone:phone,buyerWhatsapp:whatsapp,buyerDob:dob,buyerGender:gender,buyerAddress:address,buyerCity:city,buyerState:buyerState,buyerPincode:pincode,buyerCountry:country,cashbackChoice,cashbackAmount:cashbackChoice==="yes"&&state.cashbackEnabled?Number(state.cashbackAmount||0):0,enrollmentDate:new Date().toISOString()});
+    state.sales.push({product:"Brahmastra Ultimate",amount:Number(state.commission||200),time:new Date().toISOString(),ref:referral,buyerName:name,buyerEmail:email,buyerPhone:phone,buyerWhatsapp:whatsapp,buyerDob:dob,buyerGender:gender,buyerAddress:address,buyerCity:city,buyerState:buyerState,buyerCountry:country,cashbackChoice,cashbackAmount:cashbackChoice==="yes"&&state.cashbackEnabled?Number(state.cashbackAmount||0):0,enrollmentDate:new Date().toISOString()});
   }
   state.enrolled=true;localStorage.setItem("gw_enrolled","1");saveState();updateCommunityAccess();updateJobAccess();renderDashboard();renderLearningResources();
   closeModal("checkoutModal");
@@ -1648,11 +1647,89 @@ function getReferral(){
   return localStorage.getItem("gw_ref") || "";
 }
 
+async function verifyReferralCode(code){
 
-function applyReferral(){
+  try{
+
+    if(
+      !window.growthwayFirebaseReady ||
+      !window.gwDb ||
+      !window.gwCollection ||
+      !window.gwQuery ||
+      !window.gwWhere ||
+      !window.gwGetDocs
+    ){
+      console.warn("Firestore referral verification is not ready.");
+      return false;
+    }
+
+    const cleanCode = String(code || "")
+      .trim()
+      .toUpperCase();
+
+    if(!cleanCode){
+      return false;
+    }
+
+    const affiliatesRef = window.gwCollection(
+      window.gwDb,
+      "affiliates"
+    );
+
+    const q = window.gwQuery(
+      affiliatesRef,
+      window.gwWhere(
+        "affiliateCode",
+        "==",
+        cleanCode
+      )
+    );
+
+    const snapshot = await window.gwGetDocs(q);
+
+    return !snapshot.empty;
+
+  }catch(error){
+
+    console.error(
+      "Referral verification error:",
+      error
+    );
+
+    return false;
+  }
+}
+  
+async function applyReferral(){
 
   const ref = getReferral();
+if(ref){
 
+  const isValid = await verifyReferralCode(ref);
+
+  if(!isValid){
+
+    // Remove fake/invalid referral
+    localStorage.removeItem("gw_ref");
+
+    // Remove ref parameter from URL
+    const cleanUrl =
+      window.location.origin +
+      window.location.pathname;
+
+    window.history.replaceState(
+      {},
+      document.title,
+      cleanUrl
+    );
+
+    // Apply normal price
+    applyReferral();
+
+    return;
+  }
+}
+  
   // Affiliate referral detected
   if(ref){
 
@@ -2376,7 +2453,11 @@ import {
   doc,
   setDoc,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs
 }
 from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -2417,10 +2498,10 @@ try {
 
 
   // Firestore functions
-  window.gwDoc = doc;
-  window.gwSetDoc = setDoc;
-  window.gwGetDoc = getDoc;
-  window.gwServerTimestamp = serverTimestamp;
+  window.gwCollection = collection;
+window.gwQuery = query;
+window.gwWhere = where;
+window.gwGetDocs = getDocs;
 
 
   // Firebase Ready
