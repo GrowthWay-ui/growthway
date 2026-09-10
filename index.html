@@ -2032,30 +2032,189 @@ function renderQualification(){
 
 
 
-function renderDashboard(){
-  const name=state.affiliateName||"Affiliate";
-  const sales=Array.isArray(state.sales)?state.sales:[];
-  const now=new Date(), todayKey=now.toDateString(), weekAgo=Date.now()-7*86400000, monthAgo=Date.now()-30*86400000;
-  const amount=s=>Number(s.amount||state.commission||200);
-  const today=sales.filter(s=>new Date(s.time).toDateString()===todayKey).reduce((a,s)=>a+amount(s),0);
-  const weekly=sales.filter(s=>new Date(s.time).getTime()>=weekAgo).reduce((a,s)=>a+amount(s),0);
-  const monthly=sales.filter(s=>new Date(s.time).getTime()>=monthAgo).reduce((a,s)=>a+amount(s),0);
-  const all=sales.reduce((a,s)=>a+amount(s),0);
-  $("dashName").textContent=name;
-  $("todayEarning").textContent="₹"+today.toLocaleString("en-IN");
-  $("weeklyEarning").textContent="₹"+weekly.toLocaleString("en-IN");
-  $("monthlyEarning").textContent="₹"+monthly.toLocaleString("en-IN");
-  $("allTimeEarning").textContent="₹"+all.toLocaleString("en-IN");
-  $("commissionOverview").textContent="₹"+all.toLocaleString("en-IN");
-  const code=state.coupon||"—";
-  $("dashCoupon").textContent=code;
-  $("dashRefLink").textContent="growthway.in/ref/"+(state.ref||"");
-  if($("couponCode"))$("couponCode").textContent=code;
-  if($("refCode"))$("refCode").textContent=state.ref||"—";
-  $("recentSales").innerHTML=sales.length?sales.slice(-6).reverse().map(s=>`<div class="recent-row"><span>${s.product||"Brahmastra Ultimate"} • ${new Date(s.time).toLocaleDateString("en-IN")}</span><span class="sale">+₹${amount(s).toLocaleString("en-IN")}</span></div>`).join(""):`<div class="recent-row"><span>No sales yet</span><span class="sale">₹0</span></div>`;
-  renderAssociates();
-  renderQualification();
-  updateJobAccess();
+async function renderDashboard(){
+
+  // Check whether user is logged in
+  const user = window.growthwayAuthUser;
+
+  // If user is not logged in, stop
+  if(!user){
+    return;
+  }
+
+  try{
+
+    // Check Firebase connection
+    if(
+      !window.gwDb ||
+      !window.gwDoc ||
+      !window.gwGetDoc
+    ){
+      console.warn("Firebase Dashboard is not ready.");
+      return;
+    }
+
+    // Get affiliate data from Firestore
+    const affiliateRef = window.gwDoc(
+      window.gwDb,
+      "affiliates",
+      user.uid
+    );
+
+    const affiliateSnapshot =
+      await window.gwGetDoc(affiliateRef);
+
+
+    // If affiliate account does not exist
+    if(!affiliateSnapshot.exists()){
+
+      console.log("No affiliate account found.");
+
+      // Show normal dashboard
+      if($("dashName"))
+        $("dashName").textContent =
+          user.displayName || user.email || "User";
+
+      return;
+    }
+
+
+    // Get Firestore data
+    const data = affiliateSnapshot.data();
+
+
+    // Affiliate Name
+    const name =
+      data.name ||
+      user.displayName ||
+      user.email ||
+      "Affiliate";
+
+
+    // Affiliate Code
+    const code =
+      data.affiliateCode ||
+      data.coupon ||
+      "—";
+
+
+    // Earnings
+    const totalEarnings =
+      Number(data.totalEarnings || 0);
+
+    const availableBalance =
+      Number(data.availableBalance || 0);
+
+    const totalSales =
+      Number(data.totalSales || 0);
+
+
+    // Update Dashboard Name
+    if($("dashName"))
+      $("dashName").textContent = name;
+
+
+    // Update Earnings
+
+    if($("todayEarning"))
+      $("todayEarning").textContent =
+        "₹" + availableBalance.toLocaleString("en-IN");
+
+
+    if($("weeklyEarning"))
+      $("weeklyEarning").textContent =
+        "₹" + totalEarnings.toLocaleString("en-IN");
+
+
+    if($("monthlyEarning"))
+      $("monthlyEarning").textContent =
+        "₹" + totalEarnings.toLocaleString("en-IN");
+
+
+    if($("allTimeEarning"))
+      $("allTimeEarning").textContent =
+        "₹" + totalEarnings.toLocaleString("en-IN");
+
+
+    // Commission Overview
+    if($("commissionOverview"))
+      $("commissionOverview").textContent =
+        "₹" + totalEarnings.toLocaleString("en-IN");
+
+
+    // Coupon Code
+    if($("dashCoupon"))
+      $("dashCoupon").textContent = code;
+
+
+    if($("couponCode"))
+      $("couponCode").textContent = code;
+
+
+    // Referral Code
+    if($("refCode"))
+      $("refCode").textContent = code;
+
+
+    // Referral Link
+    const referralLink =
+      window.location.origin +
+      "/?ref=" +
+      encodeURIComponent(code);
+
+
+    if($("dashRefLink"))
+      $("dashRefLink").textContent =
+        referralLink;
+
+
+    // Recent Sales
+    if($("recentSales")){
+
+      if(totalSales > 0){
+
+        $("recentSales").innerHTML = `
+          <div class="recent-row">
+            <span>Total Successful Sales</span>
+            <span class="sale">${totalSales}</span>
+          </div>
+        `;
+
+      }else{
+
+        $("recentSales").innerHTML = `
+          <div class="recent-row">
+            <span>No sales yet</span>
+            <span class="sale">₹0</span>
+          </div>
+        `;
+
+      }
+    }
+
+
+    // Keep local UI state updated
+    state.affiliateName = name;
+    state.coupon = code;
+    state.ref = code;
+
+    saveState();
+
+
+    // Existing functions
+    renderAssociates?.();
+    renderQualification?.();
+    updateJobAccess?.();
+
+
+  }catch(error){
+
+    console.error(
+      "GrowthWay Dashboard Error:",
+      error
+    );
+
+  }
 }
 function getMyAssociates(){
   if(!isEnrolled()) return [];
