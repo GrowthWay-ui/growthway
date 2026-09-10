@@ -1781,9 +1781,83 @@ if(ref){
       $("refNotice").style.display = "none";
   }
 }
-function makeAffiliateCode(name){
-  const letters=(name||"USER").replace(/[^a-zA-Z]/g,"").toUpperCase();
-  return (letters.slice(0,3).padEnd(3,"X"))+"499";
+async function makeAffiliateCode(name){
+
+  // Create letters from name
+  const letters = (name || "USER")
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase();
+
+  // First 3 letters
+  const prefix = letters
+    .slice(0, 3)
+    .padEnd(3, "X");
+
+  // Firebase availability check
+  if(
+    !window.gwDb ||
+    !window.gwCollection ||
+    !window.gwQuery ||
+    !window.gwWhere ||
+    !window.gwGetDocs
+  ){
+    // Fallback code
+    return prefix + Math.floor(1000 + Math.random() * 9000);
+  }
+
+  // Try multiple unique codes
+  for(let attempt = 0; attempt < 10; attempt++){
+
+    // Example: AMB5837
+    const randomNumber =
+      Math.floor(1000 + Math.random() * 9000);
+
+    const code = prefix + randomNumber;
+
+    try{
+
+      // Check Firestore
+      const affiliatesRef =
+        window.gwCollection(
+          window.gwDb,
+          "affiliates"
+        );
+
+      const q =
+        window.gwQuery(
+          affiliatesRef,
+          window.gwWhere(
+            "affiliateCode",
+            "==",
+            code
+          )
+        );
+
+      const snapshot =
+        await window.gwGetDocs(q);
+
+      // Code does not exist
+      if(snapshot.empty){
+        return code;
+      }
+
+    }catch(error){
+
+      console.error(
+        "Affiliate code check error:",
+        error
+      );
+
+    }
+  }
+
+  // Emergency fallback
+  return (
+    prefix +
+    Date.now()
+      .toString()
+      .slice(-6)
+  );
 }
 async function applyAffiliate(){
 
@@ -1822,7 +1896,7 @@ async function applyAffiliate(){
   try{
 
     // Create affiliate code
-    const code = makeAffiliateCode(name);
+    const code = await makeAffiliateCode(name);
 
     // Create Firestore document
     const affiliateRef = window.gwDoc(
