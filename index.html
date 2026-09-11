@@ -924,9 +924,53 @@ textarea.field{min-height:120px;resize:vertical}
         <div class="small-dash"><span>Monthly Earnings</span><strong id="monthlyEarning">₹0</strong></div>
         <div class="small-dash"><span>All Time</span><strong class="green" id="allTimeEarning">₹0</strong></div>
       </div>
-      <div class="dash-grid" style="margin-top:14px">
-        <div class="dash-card"><h4>Commission Overview</h4><div class="dash-value green" id="commissionOverview">₹0</div><div class="dash-chart"><i style="height:30%"></i><i style="height:45%"></i><i style="height:37%"></i><i style="height:58%"></i><i style="height:52%"></i><i style="height:73%"></i><i style="height:67%"></i><i style="height:88%"></i><i style="height:94%"></i><i style="height:100%"></i></div></div>
-        <div class="dash-card"><h4>Affiliate Details</h4><div style="margin-top:16px;color:#9ca3af;font-size:11px">Affiliate Link</div><div style="font:700 12px monospace;margin-top:5px;color:#86efac"><span id="dashRefLink">growthway.in/ref/</span></div><div style="margin-top:14px;color:#9ca3af;font-size:11px">Coupon Code</div><div style="font:800 18px Poppins;margin-top:4px" id="dashCoupon">—</div><button class="btn btn-primary" style="width:100%;margin-top:18px" onclick="showAffiliate()">Withdraw Earnings</button></div>
+      <div class="dash-grid" style="margin-top:14px"><div class="dash-card">
+  <h4>Affiliate Details</h4>
+
+  <div style="margin-top:16px;color:#9ca3af;font-size:11px">
+    Affiliate Link
+  </div>
+
+  <div style="display:flex;gap:8px;align-items:center;margin-top:5px">
+
+    <div
+      id="dashRefLink"
+      style="font:700 12px monospace;color:#86efac;word-break:break-all;flex:1"
+    >
+      Your affiliate link will appear here
+    </div>
+
+    <button
+      class="copy-btn"
+      type="button"
+      onclick="copyAffiliateLink()"
+      title="Copy Affiliate Link"
+    >
+      <i data-lucide="copy"></i>
+    </button>
+
+  </div>
+
+  <div style="margin-top:14px;color:#9ca3af;font-size:11px">
+    Coupon Code
+  </div>
+
+  <div
+    style="font:800 18px Poppins;margin-top:4px"
+    id="dashCoupon"
+  >
+    —
+  </div>
+
+  <button
+    class="btn btn-primary"
+    style="width:100%;margin-top:18px"
+    onclick="showAffiliate()"
+  >
+    Withdraw Earnings
+  </button>
+
+      </div>
       </div>
       <div class="dash-card recent"><h4>Recent Sales</h4><div id="recentSales"><div class="recent-row"><span>No sales yet</span><span class="sale">₹0</span></div></div></div>
       <div class="dash-card associates-card" id="myAssociatesCard">
@@ -1626,6 +1670,45 @@ function openCheckout(product,price){
 function openMainCheckout(){
   openCheckout("GrowthWay Brahmastra Ultimate",state.directPrice);
 }
+
+  async function copyAffiliateLink(){
+
+  const link = $("dashRefLink")?.textContent?.trim();
+
+  if(
+    !link ||
+    link === "Your affiliate link will appear here"
+  ){
+    showToast("Your affiliate link is not ready yet.");
+    return;
+  }
+
+  try{
+
+    await navigator.clipboard.writeText(link);
+
+    showToast("Affiliate link copied successfully! 🔥");
+
+  }catch(error){
+
+    const textarea = document.createElement("textarea");
+
+    textarea.value = link;
+
+    document.body.appendChild(textarea);
+
+    textarea.select();
+
+    document.execCommand("copy");
+
+    document.body.removeChild(textarea);
+
+    showToast("Affiliate link copied successfully! 🔥");
+
+  }
+  }
+
+  
 function getReferral(){
 
   // Check referral code from URL
