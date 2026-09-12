@@ -1708,6 +1708,127 @@ function openMainCheckout(){
   }
   }
 
+  async function trackReferralLead(){
+
+  try{
+
+    // URL/localStorage से referral code लो
+    const ref = getReferral();
+
+    // कोई referral नहीं है
+    if(!ref){
+      return;
+    }
+
+    // Firebase ready नहीं है
+    if(
+      !window.growthwayFirebaseReady ||
+      !window.gwDb ||
+      !window.gwCollection ||
+      !window.gwQuery ||
+      !window.gwWhere ||
+      !window.gwGetDocs ||
+      !window.gwDoc ||
+      !window.gwSetDoc ||
+      !window.gwServerTimestamp
+    ){
+      console.warn("Lead tracking Firebase is not ready.");
+      return;
+    }
+
+    const cleanRef = String(ref)
+      .trim()
+      .toUpperCase();
+
+    // इसी browser में पहले track हुआ है?
+    const leadKey = "gw_lead_tracked_" + cleanRef;
+
+    if(localStorage.getItem(leadKey)){
+      return;
+    }
+
+    // पहले Affiliate Code verify करो
+    const affiliatesRef = window.gwCollection(
+      window.gwDb,
+      "affiliates"
+    );
+
+    const affiliateQuery = window.gwQuery(
+      affiliatesRef,
+      window.gwWhere(
+        "affiliateCode",
+        "==",
+        cleanRef
+      )
+    );
+
+    const affiliateSnapshot =
+      await window.gwGetDocs(affiliateQuery);
+
+    // Fake referral code
+    if(affiliateSnapshot.empty){
+      console.log("Invalid referral code. Lead not tracked.");
+      return;
+    }
+
+    // Affiliate UID निकालो
+    const affiliateDoc =
+      affiliateSnapshot.docs[0];
+
+    const affiliateUid =
+      affiliateDoc.id;
+
+    // Unique Lead ID
+    const leadId =
+      "lead_" +
+      Date.now() +
+      "_" +
+      Math.random()
+        .toString(36)
+        .slice(2,8);
+
+    // Firestore में Lead Save करो
+    const leadRef = window.gwDoc(
+      window.gwDb,
+      "leads",
+      leadId
+    );
+
+    await window.gwSetDoc(
+      leadRef,
+      {
+        referralCode: cleanRef,
+        affiliateUid: affiliateUid,
+
+        source: "Referral Link",
+
+        createdAt:
+          window.gwServerTimestamp(),
+
+        status: "visited"
+      }
+    );
+
+    // दोबारा track होने से रोकना
+    localStorage.setItem(
+      leadKey,
+      "true"
+    );
+
+    console.log(
+      "GrowthWay Referral Lead Tracked:",
+      cleanRef
+    );
+
+  }catch(error){
+
+    console.error(
+      "GrowthWay Lead Tracking Error:",
+      error
+    );
+
+  }
+}
   
 function getReferral(){
 
@@ -1808,6 +1929,8 @@ if(ref){
 
     // Apply normal price
     applyReferral();
+
+trackReferralLead();
 
     return;
   }
