@@ -925,6 +925,20 @@ textarea.field{min-height:120px;resize:vertical}
         <div class="small-dash"><span>All Time</span><strong class="green" id="allTimeEarning">₹0</strong></div>
       </div>
       <div class="dash-grid" style="margin-top:14px"><div class="dash-card">
+        <div class="dash-card">
+  <h4>Total Leads</h4>
+
+  <div
+    class="dash-value green"
+    id="totalLeads"
+  >
+    0
+  </div>
+
+  <div style="margin-top:8px;color:#9ca3af;font-size:11px">
+    People who visited using your referral link
+  </div>
+        </div>
   <h4>Affiliate Details</h4>
 
   <div style="margin-top:16px;color:#9ca3af;font-size:11px">
@@ -1620,6 +1634,70 @@ async function loginWithGoogle(){
       "."
     );
 
+async function loadAffiliateLeads(){
+
+  const user = window.growthwayAuthUser;
+
+  if(!user){
+    return;
+  }
+
+  try{
+
+    if(
+      !window.gwDb ||
+      !window.gwCollection ||
+      !window.gwQuery ||
+      !window.gwWhere ||
+      !window.gwGetDocs
+    ){
+      console.warn("Firestore Lead System is not ready.");
+      return;
+    }
+
+    // Leads Collection
+    const leadsRef = window.gwCollection(
+      window.gwDb,
+      "leads"
+    );
+
+    // केवल इस Affiliate की Leads
+    const q = window.gwQuery(
+      leadsRef,
+      window.gwWhere(
+        "affiliateUid",
+        "==",
+        user.uid
+      )
+    );
+
+    const snapshot =
+      await window.gwGetDocs(q);
+
+    // Total Leads
+    const totalLeads =
+      snapshot.size;
+
+    // Dashboard Update
+    if($("totalLeads")){
+      $("totalLeads").textContent =
+        totalLeads;
+    }
+
+    console.log(
+      "Total Affiliate Leads:",
+      totalLeads
+    );
+
+  }catch(error){
+
+    console.error(
+      "GrowthWay Lead Loading Error:",
+      error
+    );
+
+  }
+}
     renderDashboard?.();
 
   }catch(err){
@@ -2412,7 +2490,8 @@ async function renderDashboard(){
     renderQualification?.();
     updateJobAccess?.();
 
-
+loadAffiliateLeads();
+    
   }catch(error){
 
     console.error(
