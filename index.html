@@ -1370,7 +1370,17 @@ textarea.field{min-height:120px;resize:vertical}
     <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="applyAffiliate()">Apply Now</button>
   </div>
 </div>
-
+<!-- TEMPORARY TEST BUTTON -->
+<div style="position:fixed;bottom:20px;left:20px;z-index:99999">
+  <button
+    type="button"
+    class="btn btn-primary"
+    onclick="createTestAffiliate()"
+    style="background:#7c3aed"
+  >
+    🧪 Create TESTCODE
+  </button>
+</div>
 <!-- Admin Panel -->
 <div class="admin" id="adminPanel">
   <div class="admin-wrap">
@@ -1385,6 +1395,7 @@ textarea.field{min-height:120px;resize:vertical}
         <label>Founder Photo</label><input type="file" id="founderPhotoUpload" accept="image/*">
         <div class="admin-actions"><button class="btn btn-primary" onclick="saveProfileImages()">Save Images</button><button class="btn btn-outline" onclick="resetProfileImages()">Reset</button></div>
       </div>
+      
       <div class="admin-card admin-wide"><h3>Qualification & Sales Rewards</h3><label>Reward Program Title</label><input id="adminQualificationTitle" value="🎉 GrowthWay MONTHLY + LIFETIME REWARD PROGRAM 🎁"><label>Monthly Reward Milestones (sales | emoji | reward)</label><textarea id="adminQualificationRewards" rows="13">5 | 🎧 | Wireless Earphones1
 10 | 💡 | Ring Light
 15 | ⌚ | Smart Watch
@@ -2931,7 +2942,55 @@ try {
   window.gwSetDoc = setDoc;
   window.gwGetDoc = getDoc;
   window.gwServerTimestamp = serverTimestamp;
+window.createTestAffiliate = async function(){
 
+  try{
+
+    const testUid = "TEST_AFFILIATE_001";
+
+    const affiliateRef = window.gwDoc(
+      window.gwDb,
+      "affiliates",
+      testUid
+    );
+
+    await window.gwSetDoc(
+      affiliateRef,
+      {
+        uid: testUid,
+        name: "Test Affiliate",
+        email: "test@growthway.com",
+
+        affiliateCode: "TESTCODE",
+        coupon: "TESTCODE",
+
+        referralLink:
+          window.location.origin + "/?ref=TESTCODE",
+
+        commissionPerSale: 200,
+        totalSales: 0,
+        totalEarnings: 0,
+        availableBalance: 0,
+
+        status: "active",
+        createdAt: window.gwServerTimestamp()
+      },
+      { merge: true }
+    );
+
+    alert("✅ TESTCODE created successfully!");
+
+  }catch(error){
+
+    console.error("TEST Affiliate Error:", error);
+
+    alert(
+      "❌ Test affiliate create नहीं हुआ। Console में error देखें।"
+    );
+
+  }
+
+};
 
   // Firebase Ready
   window.growthwayFirebaseReady = true;
